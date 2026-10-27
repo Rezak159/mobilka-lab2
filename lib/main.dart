@@ -171,6 +171,27 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ),
 
+            SizedBox(height: 24),
+            if (state.history.isNotEmpty)
+              Row(
+                children: [
+                  Text(
+                    'История',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  Spacer(),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        state.history.clear();
+                      });
+                    },
+                    child: Text('Очистить'),
+                  ),
+                ],
+              ),
+            for (var h in state.history)
+              ListTile(leading: Icon(Icons.history), title: Text(h)),
           ],
         ),
       ),

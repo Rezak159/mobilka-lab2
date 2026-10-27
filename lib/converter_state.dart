@@ -14,6 +14,8 @@ class ConverterState extends ChangeNotifier {
   double result = 0;
   Rate? rate;
 
+  List<String> history = [];
+
   void swap() {
     String t = curFrom;
     curFrom = toCurrency;
@@ -54,6 +56,16 @@ class ConverterState extends ChangeNotifier {
       rate = await repo.getRate(curFrom, toCurrency);
       result = amount * rate!.value;
       status = 'ok';
+      history.insert(
+        0,
+        amount.toString() +
+            ' ' +
+            curFrom +
+            ' = ' +
+            result.toStringAsFixed(2) +
+            ' ' +
+            toCurrency,
+      );
     } catch (e) {
       status = 'error';
       error = e.toString();

@@ -14,7 +14,11 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Demo',
-      theme: ThemeData(colorScheme: .fromSeed(seedColor: Colors.blue)),
+      theme: ThemeData(
+        colorScheme: .fromSeed(
+          seedColor: const Color.fromARGB(255, 183, 58, 114),
+        ),
+      ),
       home: const MyHomePage(title: 'Конвертер валют'),
     );
   }
@@ -43,6 +47,8 @@ class _MyHomePageState extends State<MyHomePage> {
     'KZT',
     'BYN',
     'TRY',
+    'VND',
+    'THB',
   ];
 
   @override
@@ -62,136 +68,89 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: SafeArea(
         child: ListView(
-          padding: EdgeInsets.all(16),
+          padding: EdgeInsets.all(15),
           children: [
-            Text('Сумма', style: TextStyle(fontSize: 16)),
-            SizedBox(height: 8),
             TextField(
               controller: controller,
               keyboardType: TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: 'Введите сумму',
-              ),
+              decoration: InputDecoration(labelText: 'Сумма'),
             ),
-            SizedBox(height: 16),
-
-            Text('Из', style: TextStyle(fontSize: 16)),
-            DropdownButton<String>(
-              value: state.curFrom,
-              isExpanded: true,
-              items: currencies.map((c) {
-                return DropdownMenuItem(value: c, child: Text(c));
-              }).toList(),
-              onChanged: (v) {
-                setState(() {
-                  state.curFrom = v!;
-                });
+            SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButton<String>(
+                    value: state.curFrom,
+                    isExpanded: true,
+                    items: currencies.map((c) {
+                      return DropdownMenuItem(value: c, child: Text(c));
+                    }).toList(),
+                    onChanged: (v) {
+                      setState(() {
+                        state.curFrom = v!;
+                      });
+                    },
+                  ),
+                ),
+                IconButton(
+                  onPressed: () {
+                    state.swap();
+                  },
+                  icon: Icon(Icons.swap_horiz),
+                ),
+                Expanded(
+                  child: DropdownButton<String>(
+                    value: state.toCurrency,
+                    isExpanded: true,
+                    items: currencies.map((c) {
+                      return DropdownMenuItem(value: c, child: Text(c));
+                    }).toList(),
+                    onChanged: (v) {
+                      setState(() {
+                        state.toCurrency = v!;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                FocusScope.of(context).unfocus();
+                state.convert(controller.text);
               },
+              child: Text('Конвертировать'),
             ),
-
-            Center(
-              child: IconButton(
-                onPressed: () {
-                  state.swap();
-                },
-                icon: Icon(Icons.swap_vert, size: 32),
-              ),
-            ),
-
-            Text('В', style: TextStyle(fontSize: 16)),
-            DropdownButton<String>(
-              value: state.toCurrency,
-              isExpanded: true,
-              items: currencies.map((c) {
-                return DropdownMenuItem(value: c, child: Text(c));
-              }).toList(),
-              onChanged: (v) {
-                setState(() {
-                  state.toCurrency = v!;
-                });
-              },
-            ),
-            SizedBox(height: 16),
-
-            SizedBox(
-              height: 50,
-              child: ElevatedButton(
-                onPressed: () {
-                  FocusScope.of(context).unfocus();
-                  state.convert(controller.text);
-                },
-                child: Text('Конвертировать', style: TextStyle(fontSize: 18)),
-              ),
-            ),
-            SizedBox(height: 16),
+            SizedBox(height: 20),
 
             // Text(state.status),
             if (state.status == 'loading')
               Center(child: CircularProgressIndicator()),
 
             if (state.status == 'error')
-              Text(
-                state.error,
-                style: TextStyle(color: Colors.red, fontSize: 16),
-              ),
+              Text(state.error, style: TextStyle(color: Colors.red)),
 
             if (state.status == 'ok')
-              Card(
-                child: Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: .start,
-                    children: [
-                      Text('Результат'),
-                      Text(
-                        state.result.toStringAsFixed(2) +
-                            ' ' +
-                            state.rate!.target,
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        '1 ' +
-                            state.rate!.base +
-                            ' = ' +
-                            state.rate!.value.toString() +
-                            ' ' +
-                            state.rate!.target,
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        'Курс обновлен: ' + state.rate!.updated,
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                ),
+              Text(
+                state.result.toStringAsFixed(2) + ' ' + state.rate!.target,
+                style: TextStyle(fontSize: 30),
               ),
+            if (state.status == 'ok')
+              Text(
+                '1 ' +
+                    state.rate!.base +
+                    ' = ' +
+                    state.rate!.value.toString() +
+                    ' ' +
+                    state.rate!.target,
+              ),
+            if (state.status == 'ok')
+              Text('Курс обновлен: ' + state.rate!.updated),
 
-            SizedBox(height: 24),
-            if (state.history.isNotEmpty)
-              Row(
-                children: [
-                  Text(
-                    'История',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  Spacer(),
-                  TextButton(
-                    onPressed: () {
-                      setState(() {
-                        state.history.clear();
-                      });
-                    },
-                    child: Text('Очистить'),
-                  ),
-                ],
-              ),
-            for (var h in state.history)
-              ListTile(leading: Icon(Icons.history), title: Text(h)),
+            SizedBox(height: 30),
+            if (state.history.isNotEmpty) Text('История:'),
+            for (var h in state.history) Text(h),
           ],
         ),
       ),

@@ -1,7 +1,6 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+
+import 'converter_state.dart';
 
 void main() {
   runApp(const MyApp());
@@ -31,13 +30,8 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  ConverterState state = ConverterState();
   TextEditingController controller = TextEditingController();
-
-  String curFrom = 'EUR';
-  String toCurrency = 'RUB';
-  double result = 0;
-  double rate = 0;
-  bool loading = false;
 
   List<String> currencies = [
     'RUB',
@@ -51,23 +45,11 @@ class _MyHomePageState extends State<MyHomePage> {
     'TRY',
   ];
 
-  void convert() async {
-    setState(() {
-      loading = true;
-    });
-
-    var response = await http.get(
-      Uri.parse('https://open.er-api.com/v6/latest/' + curFrom),
-    );
-    var data = jsonDecode(response.body);
-    print(data);
-
-    double amount = double.parse(controller.text);
-
-    setState(() {
-      rate = data['rates'][toCurrency];
-      result = amount * rate;
-      loading = false;
+  @override
+  void initState() {
+    super.initState();
+    state.addListener(() {
+      setState(() {});
     });
   }
 
@@ -96,28 +78,37 @@ class _MyHomePageState extends State<MyHomePage> {
 
             Text('Из', style: TextStyle(fontSize: 16)),
             DropdownButton<String>(
-              value: curFrom,
+              value: state.curFrom,
               isExpanded: true,
               items: currencies.map((c) {
                 return DropdownMenuItem(value: c, child: Text(c));
               }).toList(),
               onChanged: (v) {
                 setState(() {
-                  curFrom = v!;
+                  state.curFrom = v!;
                 });
               },
             ),
 
+            Center(
+              child: IconButton(
+                onPressed: () {
+                  state.swap();
+                },
+                icon: Icon(Icons.swap_vert, size: 32),
+              ),
+            ),
+
             Text('В', style: TextStyle(fontSize: 16)),
             DropdownButton<String>(
-              value: toCurrency,
+              value: state.toCurrency,
               isExpanded: true,
               items: currencies.map((c) {
                 return DropdownMenuItem(value: c, child: Text(c));
               }).toList(),
               onChanged: (v) {
                 setState(() {
-                  toCurrency = v!;
+                  state.toCurrency = v!;
                 });
               },
             ),
@@ -127,16 +118,25 @@ class _MyHomePageState extends State<MyHomePage> {
               height: 50,
               child: ElevatedButton(
                 onPressed: () {
-                  convert();
+                  FocusScope.of(context).unfocus();
+                  state.convert(controller.text);
                 },
                 child: Text('Конвертировать', style: TextStyle(fontSize: 18)),
               ),
             ),
             SizedBox(height: 16),
 
-            if (loading) Center(child: CircularProgressIndicator()),
+            // Text(state.status),
+            if (state.status == 'loading')
+              Center(child: CircularProgressIndicator()),
 
-            if (result != 0)
+            if (state.status == 'error')
+              Text(
+                state.error,
+                style: TextStyle(color: Colors.red, fontSize: 16),
+              ),
+
+            if (state.status == 'ok')
               Card(
                 child: Padding(
                   padding: EdgeInsets.all(16),
@@ -145,7 +145,9 @@ class _MyHomePageState extends State<MyHomePage> {
                     children: [
                       Text('Результат'),
                       Text(
-                        result.toStringAsFixed(2) + ' ' + toCurrency,
+                        state.result.toStringAsFixed(2) +
+                            ' ' +
+                            state.rate!.target,
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
@@ -153,16 +155,22 @@ class _MyHomePageState extends State<MyHomePage> {
                       ),
                       Text(
                         '1 ' +
-                            curFrom +
+                            state.rate!.base +
                             ' = ' +
-                            rate.toString() +
+                            state.rate!.value.toString() +
                             ' ' +
-                            toCurrency,
+                            state.rate!.target,
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'Курс обновлен: ' + state.rate!.updated,
+                        style: TextStyle(color: Colors.grey),
                       ),
                     ],
                   ),
                 ),
               ),
+
           ],
         ),
       ),

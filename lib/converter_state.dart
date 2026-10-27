@@ -15,13 +15,37 @@ class ConverterState extends ChangeNotifier {
   Rate? rate;
 
   void swap() {
+    String t = curFrom;
     curFrom = toCurrency;
-    toCurrency = curFrom;
+    toCurrency = t;
+    status = '';
     notifyListeners();
   }
 
   Future<void> convert(String text) async {
-    double amount = double.parse(text);
+    text = text.replaceAll(',', '.').trim();
+
+    if (text == '') {
+      status = 'error';
+      error = 'Введите сумму';
+      notifyListeners();
+      return;
+    }
+
+    double? amount = double.tryParse(text);
+
+    if (amount == null) {
+      status = 'error';
+      error = 'Некорректная сумма';
+      notifyListeners();
+      return;
+    }
+    if (amount < 0) {
+      status = 'error';
+      error = 'Сумма не может быть отрицательной';
+      notifyListeners();
+      return;
+    }
 
     status = 'loading';
     notifyListeners();
